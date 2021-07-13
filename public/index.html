@@ -1,0 +1,173 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Document</title>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@4.6.0/dist/css/bootstrap.min.css" integrity="sha384-B0vP5xmATw1+K9KRQjQERJvTumQW0nPEzvF6L/Z6nronJ3oUOFUFpCjEUQouq2+l" crossorigin="anonymous">
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.5.1/jquery.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/popper.js@1.16.1/dist/umd/popper.min.js" integrity="sha384-9/reFTGAW83EW2RDu2S0VKaIzap3H66lZH81PoYlFhbGU+6BZp6G7niu735Sk7lN" crossorigin="anonymous"></script>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@4.6.0/dist/js/bootstrap.min.js" integrity="sha384-+YQ4JLhjyBLPDQt//I+STsc9iw4uQqACwlvpslubQzn4u2UU2UFM80nGisd026JF" crossorigin="anonymous"></script>
+</head>
+<body>
+    <div class="m-5">
+        <h1>Lists Users</h1>
+        <form name="userForm">
+            <input type="hidden" class="form-control"  name="id" value="-1">
+            <div class="form-group">
+                <label for="name">Name</label>
+                <input type="text" class="form-control" id="name" name="name">
+            </div>
+            <div class="form-group">
+                <label for="family">Family</label>
+                <input type="text" class="form-control" id="family" name="family">
+            </div>
+            <button type="submit" class="btn btn-primary m-1">SEND</button>
+        </form>
+
+        <table class="table">
+            <thead>
+                <tr>
+                    <th scope="col">Id</th>
+                    <th scope="col">Name</th>
+                    <th scope="col">Family</th>
+                    <th scope="col"></th>
+                    <th scope="col"></th>
+                </tr>
+            </thead>
+            <tbody>
+                
+            </tbody>
+        </table>
+    </div>
+
+    <script>
+        function GetUsers() {
+            $.ajax({
+                url: "/api/users",
+                type: "GET",
+                contentType: "application/json",
+                success: function(users){
+                    var row_table = '';
+                    $.each(JSON.parse(users) , function(index, user){
+                        row_table +=  row(user);
+                    });
+                    $("table tbody").append(row_table);
+                }
+            });
+        }
+        
+        function ajaxQuery(data, _url, _method = ''){
+            $.ajax({
+                url: _url,
+                contentType: "application/json",
+                method: _method,
+                data: data,
+                success: function(user){
+                    if(_method.toLowerCase() == "post"){
+                        var row_table = row(JSON.parse(user));
+                        $("table tbody").append(row_table);
+                    }
+                    if(_method.toLowerCase() == "put"){
+                        user = JSON.parse(user);
+                        console.log($("#user_name-" + user.id).html());
+                        $("#user_name-" + user.id).html(user.name);
+                        $("#user_family-" + user.id).html(user.family);
+
+                    }
+                    if(_method.toLowerCase() == "post"){
+                        user = JSON.parse(user);
+                    }
+                    if(_method.toLowerCase() == "delete"){
+                        user = JSON.parse(user);
+                        $(`#row_id-${user.id}`).remove();
+
+                    }
+
+
+                    var form = document.forms['userForm'];
+                    form.elements['id'].value = -1;
+                    form.elements['name'].value = "";
+                    form.elements['family'].value = "";
+                }
+            });
+
+        }
+
+
+        $("form").submit(function(event){
+            event.preventDefault();// відміна відправки форми
+            
+            var id = this.elements['id'].value;
+            var name = this.elements['name'].value;
+            var family = this.elements['family'].value;
+            
+            var data;
+            var method = "";
+
+            if(id == -1) {
+                data = JSON.stringify({
+                        name: name,
+                        family: family
+                    });
+                    method = "POST";
+            } else {
+                data = JSON.stringify({
+                    id: id,
+                    name: name,
+                    family: family
+                });
+                method = "PUT";
+            }
+                
+            ajaxQuery(data, "/api/users", method);
+        });
+
+        $("body").on('click','.edit',function(){
+            var id = $(this).data('id');
+            $.ajax({
+                url: "/api/users/" + id,
+                type: "GET",
+                contentType: "application/json",
+                success: function(user){
+                    user = JSON.parse(user);
+                    var form = document.forms['userForm'];
+                    form.elements['id'].value = user.id;
+                    form.elements['name'].value = user.name;
+                    form.elements['family'].value = user.family;
+                }
+            });
+        });
+
+        $("body").on('click', '.delete', function(){
+            var id = $(this).data('id');
+            $.ajax({
+                url: "/api/users/" + id,
+                type: "DELETE",
+                contentType: "application/json",
+                success: function(user){
+                    user = JSON.parse(user);
+                    $(`#row_id-${user.id}`).remove();
+                }
+            });
+        });
+
+        function row(user) {
+            return `<tr id="row_id-${user.id}">
+                        <td>${user.id}</td> 
+                        <td id="user_name-${user.id}">${user.name}</td> 
+                        <td id="user_family-${user.id}">${user.family}</td>
+                        <td>
+                            <a  data-id="${user.id}" class="edit btn btn-warning">Edit</a>
+                        </td>
+                        <td>
+                            <a  data-id="${user.id}" class="delete btn btn-danger">Delete</a>
+                        </td>
+                    </tr> `;
+        }
+
+        GetUsers()
+    </script>
+</body>
+</html>
